@@ -3,7 +3,8 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="10dp"
-    android:weightSum="10" >
+    android:weightSum="10"
+    android:background="@android:color/white" >
 
     <ImageView
         android:id="@+id/ivCaptured"
@@ -37,7 +38,8 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:lineSpacingExtra="3sp"
-                android:textSize="13sp" />
+                android:textSize="13sp"
+                android:textColor="@android:color/black" />
 
             <TextView
                 android:id="@+id/tvCapLong"
@@ -45,7 +47,8 @@
                 android:layout_height="wrap_content"
                 android:layout_marginLeft="5dp"
                 android:lineSpacingExtra="3sp"
-                android:textSize="13sp" />
+                android:textSize="13sp"
+                android:textColor="@android:color/black" />
         </LinearLayout>
 
         <TextView
@@ -53,7 +56,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:lineSpacingExtra="3sp"
-            android:textSize="13sp" />
+            android:textSize="13sp"
+            android:textColor="@android:color/black" />
 
         <LinearLayout
             android:id="@+id/actionContainer"

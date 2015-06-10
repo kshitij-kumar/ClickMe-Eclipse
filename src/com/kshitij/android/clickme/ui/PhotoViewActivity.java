@@ -368,7 +368,6 @@ public class PhotoViewActivity extends AppCompatActivity implements
 
 	@Override
 	public void onBackPressed() {
-		setResult(RESULT_OK);
 		super.onBackPressed();
 	}
 
