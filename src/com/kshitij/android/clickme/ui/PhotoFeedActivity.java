@@ -95,8 +95,16 @@ public class PhotoFeedActivity extends AppCompatActivity {
 		}
 		case Constants.ACTION_VIEW_PHOTO: {
 			if (resultCode == RESULT_OK) {
-				mAdapter.setData(ContentManager.getInstance().getImageDetails());
-				mAdapter.notifyDataSetChanged();
+				if (mAdapter == null) {
+					mAdapter = new ListAdapter(getApplicationContext(),
+							ContentManager.getInstance().getImageDetails());
+					mListView.setAdapter(mAdapter);
+					mAdapter.notifyDataSetChanged();
+				} else {
+					mAdapter.setData(ContentManager.getInstance()
+							.getImageDetails());
+					mAdapter.notifyDataSetChanged();
+				}
 				mImageFilePath = null;
 			}
 			break;
@@ -130,11 +138,12 @@ public class PhotoFeedActivity extends AppCompatActivity {
 		protected void onPostExecute(List<ImageDetail> imageDetails) {
 			Log.d(TAG, "LoadFeedTask, onPostExecute(), " + imageDetails.size());
 			dissmissLoadingProgress();
-			mAdapter = new ListAdapter(getApplicationContext(), imageDetails);
 			if (mMenuItemCamera != null) {
 				mMenuItemCamera.setVisible(true);
 			}
 			if (imageDetails != null && imageDetails.size() > 0) {
+				mAdapter = new ListAdapter(getApplicationContext(),
+						imageDetails);
 				mAdapter.setData(imageDetails);
 				mListView.setAdapter(mAdapter);
 				mAdapter.notifyDataSetChanged();
@@ -178,7 +187,6 @@ public class PhotoFeedActivity extends AppCompatActivity {
 		try {
 			f = createImageFile();
 			mImageFilePath = f.getAbsolutePath();
-			Log.d(TAG, "Path = " + mImageFilePath);
 			takePictureIntent
 					.putExtra(MediaStore.EXTRA_OUTPUT, Uri.fromFile(f));
 		} catch (IOException e) {
