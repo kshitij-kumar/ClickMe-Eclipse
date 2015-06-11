@@ -17,17 +17,24 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.v7.app.AppCompatActivity;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.AbsListView;
+import android.widget.AbsListView.OnScrollListener;
 import android.widget.ListView;
 
+import com.example.android.displayingbitmaps.util.ImageCache;
+import com.example.android.displayingbitmaps.util.ImageFetcher;
+import com.example.android.displayingbitmaps.util.Utils;
 import com.kshitij.android.clickme.R;
 import com.kshitij.android.clickme.adapter.ListAdapter;
 import com.kshitij.android.clickme.db.ImageDataBaseHelper;
 import com.kshitij.android.clickme.model.ImageDetail;
 import com.kshitij.android.clickme.util.Constants;
 import com.kshitij.android.clickme.util.ContentManager;
+import com.kshitij.android.clickme.util.Utility;
 
 /**
  * Created by kshitij.kumar on 09-06-2015.
@@ -40,19 +47,62 @@ import com.kshitij.android.clickme.util.ContentManager;
 
 public class PhotoFeedActivity extends AppCompatActivity {
 	private static final String TAG = PhotoFeedActivity.class.getSimpleName();
-
+	private static final String IMAGE_CACHE_DIR = "thumbs";
+	
 	private String mImageFilePath;
 	private ListView mListView;
 	private ListAdapter mAdapter;
 	private ProgressDialog mProgressDialog;
 	private LoadFeedTask mLoadFeedTask;
 	private MenuItem mMenuItemCamera;
+	private ImageFetcher mImageFetcher;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_photo_feed);
 		mListView = (ListView) findViewById(R.id.photoList);
+		
+        final DisplayMetrics displayMetrics = new DisplayMetrics();
+        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
+        final int height = Utility.dpToPx(300);
+        final int width = displayMetrics.widthPixels;
+
+        final int longest = (height > width ? height : width) / 2;
+
+        ImageCache.ImageCacheParams cacheParams =
+                new ImageCache.ImageCacheParams(this, IMAGE_CACHE_DIR);
+        cacheParams.setMemCacheSizePercent(0.25f);
+
+        mImageFetcher = new ImageFetcher(this, longest);
+        mImageFetcher.addImageCache(getSupportFragmentManager(), cacheParams);
+        mImageFetcher.setImageFadeIn(false);
+        mImageFetcher.setLoadingImage(R.drawable.empty_photo);
+        
+		mListView.setOnScrollListener(new OnScrollListener() {
+
+			@Override
+			public void onScrollStateChanged(AbsListView view, int scrollState) {
+				if (scrollState == AbsListView.OnScrollListener.SCROLL_STATE_FLING) {
+					// Before Honeycomb pause image loading on scroll to help
+					// with performance
+					if (!Utils.hasHoneycomb()) {
+						mImageFetcher.setPauseWork(true);
+					}
+				} else {
+					mImageFetcher.setPauseWork(false);
+				}
+
+			}
+
+			@Override
+			public void onScroll(AbsListView view, int firstVisibleItem,
+					int visibleItemCount, int totalItemCount) {
+				// TODO Auto-generated method stub
+
+			}
+		});
+        
 		mLoadFeedTask = new LoadFeedTask();
 		mLoadFeedTask.execute();
 	}
@@ -97,7 +147,7 @@ public class PhotoFeedActivity extends AppCompatActivity {
 			if (resultCode == RESULT_OK) {
 				if (mAdapter == null) {
 					mAdapter = new ListAdapter(getApplicationContext(),
-							ContentManager.getInstance().getImageDetails());
+							ContentManager.getInstance().getImageDetails(), mImageFetcher);
 					mListView.setAdapter(mAdapter);
 					mAdapter.notifyDataSetChanged();
 				} else {
@@ -111,6 +161,29 @@ public class PhotoFeedActivity extends AppCompatActivity {
 		}
 		}
 	}
+	
+    @Override
+    public void onResume() {
+        super.onResume();
+        mImageFetcher.setExitTasksEarly(false);
+        if(mAdapter != null) {
+        	mAdapter.notifyDataSetChanged();
+        }
+    }
+
+    @Override
+    public void onPause() {
+        super.onPause();
+        mImageFetcher.setPauseWork(false);
+        mImageFetcher.setExitTasksEarly(true);
+        mImageFetcher.flushCache();
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        mImageFetcher.closeCache();
+    }
 
 	/**
 	 * AsyncTask to download data off the UI thread
@@ -143,7 +216,7 @@ public class PhotoFeedActivity extends AppCompatActivity {
 			}
 			if (imageDetails != null && imageDetails.size() > 0) {
 				mAdapter = new ListAdapter(getApplicationContext(),
-						imageDetails);
+						imageDetails, mImageFetcher);
 				mAdapter.setData(imageDetails);
 				mListView.setAdapter(mAdapter);
 				mAdapter.notifyDataSetChanged();
