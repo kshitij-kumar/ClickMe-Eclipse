@@ -1,12 +1,14 @@
 package com.kshitij.android.clickme.adapter;
 
+import java.io.File;
+import java.lang.ref.WeakReference;
+import java.util.HashMap;
 import java.util.List;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -31,6 +33,7 @@ public class ListAdapter extends BaseAdapter {
 	private static final String TAG = ListAdapter.class.getSimpleName();
 	private LayoutInflater mInflater;
 	private List<ImageDetail> mImageDetails;
+	HashMap<String, WeakReference<Bitmap>> mImageMap = new HashMap<String, WeakReference<Bitmap>>();
 
 	public ListAdapter(Context context, List<ImageDetail> imageDetails) {
 		mInflater = LayoutInflater.from(context);
@@ -99,12 +102,20 @@ public class ListAdapter extends BaseAdapter {
 		// assign values if the object is not null
 		if (imageDetail != null) {
 
-			int targetWidth = 400;
-			int targetHeight = 300;
+			Bitmap bitmap = null;
+			if (mImageMap.get(imageDetail.getDiskPath()) != null) {
+				bitmap = mImageMap.get(imageDetail.getDiskPath()).get();
+			}
+			if (bitmap == null) {
+				int targetWidth = 400;
+				int targetHeight = 300;
+				bitmap = getdownSampledImage(imageDetail.getDiskPath(),
+						targetWidth, targetHeight);
+				mImageMap.put(getFileNameFromPath(imageDetail.getDiskPath()),
+						new WeakReference<Bitmap>(bitmap));
+			}
 
-			Bitmap bitmap = getPic(imageDetail.getDiskPath(), 400, 300);
 			viewHolder.image.setImageBitmap(bitmap);
-			Log.d(TAG, "getView(), " + imageDetail.getDiskPath());
 			if (imageDetail.getLatitude() != null) {
 				viewHolder.tvLat.setVisibility(View.VISIBLE);
 				viewHolder.tvLat.setText("Lat: " + imageDetail.getLatitude()
@@ -136,7 +147,7 @@ public class ListAdapter extends BaseAdapter {
 		return convertView;
 	}
 
-	private Bitmap getPic(String path, int width, int height) {
+	private Bitmap getdownSampledImage(String path, int width, int height) {
 
 		/* There isn't enough memory to open up more than a couple camera photos */
 		/* So pre-scale the target bitmap into which the file is decoded */
@@ -166,6 +177,16 @@ public class ListAdapter extends BaseAdapter {
 		/* Decode the JPEG file into a Bitmap */
 		return BitmapFactory.decodeFile(path, bmOptions);
 
+	}
+	
+	private String getFileNameFromPath(String path) {
+		if (path != null) {
+			File file = new File(path);
+			if (file.exists()) {
+				return file.getName();
+			}
+		}
+		return null;
 	}
 
 	static class ViewHolderItem {

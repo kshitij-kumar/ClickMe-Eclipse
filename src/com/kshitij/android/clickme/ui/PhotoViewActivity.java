@@ -1,5 +1,7 @@
 package com.kshitij.android.clickme.ui;
 
+import java.io.File;
+
 import android.app.AlertDialog;
 import android.app.ProgressDialog;
 import android.content.DialogInterface;
@@ -106,7 +108,7 @@ public class PhotoViewActivity extends AppCompatActivity implements
 				if (mSaveImageDetailsTask != null) {
 					mSaveImageDetailsTask.cancel(true);
 				}
-				stopLocationUpdates();
+				deleteTempFile();
 				finish();
 
 			}
@@ -368,6 +370,10 @@ public class PhotoViewActivity extends AppCompatActivity implements
 
 	@Override
 	public void onBackPressed() {
+		if (mSaveImageDetailsTask != null) {
+			mSaveImageDetailsTask.cancel(true);
+		}
+		deleteTempFile();
 		super.onBackPressed();
 	}
 
@@ -377,4 +383,12 @@ public class PhotoViewActivity extends AppCompatActivity implements
 		super.onStop();
 	}
 
+	private void deleteTempFile() {
+		if (mImagePath != null) {
+			File file = new File(mImagePath);
+			if (file.exists()) {
+				file.delete();
+			}
+		}
+	}
 }
